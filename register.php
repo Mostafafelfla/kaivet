@@ -1,0 +1,188 @@
+<?php
+// **FIX**: Start the session at the very beginning of the script
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+require 'db_connect.php';
+
+$error = '';
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $first_name = trim($_POST['first_name']);
+    $last_name = trim($_POST['last_name']);
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
+    $confirm_password = trim($_POST['confirm_password']);
+
+    // Combine first and last name for the database
+    $full_name = $first_name . ' ' . $last_name;
+
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password)) {
+        $error = "جميع الحقول مطلوبة.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "صيغة البريد الإلكتروني غير صالحة.";
+    } elseif ($password !== $confirm_password) {
+        $error = "كلمتا المرور غير متطابقتين.";
+    } elseif (strlen($password) < 6) {
+        $error = "يجب أن تكون كلمة المرور 6 أحرف على الأقل.";
+    } else {
+        // Check if the email already exists
+        $stmt_check = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt_check->bind_param("s", $email);
+        $stmt_check->execute();
+        $stmt_check->store_result();
+        
+        if ($stmt_check->num_rows > 0) {
+            $error = "هذا البريد الإلكتروني مسجل بالفعل.";
+        } else {
+            // Hash the password
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            
+            $stmt_insert = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+            $stmt_insert->bind_param("sss", $full_name, $email, $hashed_password);
+
+            if ($stmt_insert->execute()) {
+                // **FIX**: Automatically log the user in and redirect
+                $new_user_id = $stmt_insert->insert_id;
+                $_SESSION['user_id'] = $new_user_id;
+                $_SESSION['user_name'] = $full_name;
+                
+                header("Location: index.php");
+                exit();
+            } else {
+                $error = "حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.";
+            }
+            $stmt_insert->close();
+        }
+        $stmt_check->close();
+    }
+    $conn->close();
+}
+?>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء حساب جديد - Vet Nour</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon.png">
+
+    <style>
+        body { 
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        /* **MODIFIED:** Combined Logo Animation Effects */
+        .logo-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin-bottom: 1rem;
+            border-radius: 50%;
+            padding: 5px; /* Space for the gradient border */
+            background: linear-gradient(45deg, #f97316, #3b82f6, #10b981); /* orange-500, blue-500, emerald-500 */
+            animation: border-color-change 5s linear infinite;
+            overflow: hidden; /* Hide the shimmer overflow */
+            transition: transform 0.3s ease-out;
+        }
+
+        .logo-container:hover {
+            transform: scale(1.1) translateY(-5px);
+        }
+
+        .logo-image {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid white; /* Inner border to separate logo from gradient */
+        }
+
+        /* Shimmer/Sweep effect */
+        .logo-container::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 20%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(25deg);
+            animation: shimmer 4s infinite;
+            animation-delay: 2s;
+        }
+
+        @keyframes border-color-change {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes shimmer {
+            100% {
+                transform: translateX(250px) rotate(25deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="relative flex flex-col m-6 space-y-8 bg-white shadow-2xl rounded-2xl md:flex-row md:space-y-0">
+            <!-- Left Side -->
+            <div class="flex flex-col justify-center p-8 md:p-14">
+                <!-- **MODIFIED:** Wrapped image in a container for the new animation -->
+                <div class="logo-container mx-auto">
+                    <img src="logo.png" alt="Vet Nour Logo" class="logo-image">
+                </div>
+                <span class="font-light text-gray-500 mb-8 text-center">
+                    مرحباً بك! يرجى إدخال بياناتك لإنشاء حساب جديد
+                </span>
+
+                 <?php if ($error): ?>
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg" role="alert">
+                        <p><?php echo $error; ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <form action="register.php" method="post" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" name="first_name" placeholder="الاسم الأول" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <input type="text" name="last_name" placeholder="الاسم الأخير" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <input type="email" name="email" placeholder="البريد الإلكتروني" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="password" name="password" placeholder="كلمة المرور" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="password" name="confirm_password" placeholder="تأكيد كلمة المرور" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 shadow-lg hover:shadow-blue-500/50 transform hover:-translate-y-0.5">
+                        إنشاء حساب جديد
+                    </button>
+                </form>
+                <hr class="my-6 border-gray-300">
+                <div class="text-center text-gray-500">
+                    لديك حساب بالفعل؟
+                    <a href="login.php" class="font-bold text-blue-600 hover:underline">سجل الدخول</a>
+                </div>
+            </div>
+            <!-- Right Side (Branding & Image) -->
+            <div class="relative hidden lg:block">
+                <img src="vet.png" 
+                     alt="صورة بيطرية" 
+                     class="w-[400px] h-full hidden rounded-r-2xl md:block object-cover">
+                <!-- Overlay -->
+                <div class="absolute hidden md:block inset-0 bg-gradient-to-t from-blue-800/55 to-transparent rounded-r-2xl"></div>
+                <div class="absolute hidden md:block bottom-10 right-6 p-6 text-white text-xl">
+                    <p>"إدارة أفضل، لرعاية أفضل."</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
