@@ -1,4 +1,11 @@
 <?php
+// ===== الإضافة هنا =====
+// يجب بدء الجلسة في بداية كل ملف API للتعرف على المستخدم المسجل دخوله
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// ======================
+
 require '../db_connect.php'; // يوفر المتغير $conn
 header('Content-Type: application/json; charset=utf-8');
 
@@ -11,7 +18,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 try {
-    // مصفوفة الاستجابة المبدئية (تم إضافة كل المفاتيح)
+    // مصفوفة الاستجابة المبدئية (تبقى كما هي)
     $response = [
         'success' => true,
         'data' => [
@@ -24,12 +31,12 @@ try {
             'suppliers' => [],
             'doctors' => [],
             'services' => [],
-            'promotions' => [], // <-- الإضافة الجديدة
+            'promotions' => [],
             'settings' => []
         ]
     ];
 
-    // دالة مساعدة (كما هي، صحيحة)
+    // دالة مساعدة (تبقى كما هي)
     function fetchAll($conn, $sql, $params = [], $types = "") {
         $stmt = $conn->prepare($sql);
         if ($stmt === false) {
@@ -53,7 +60,7 @@ try {
         return $data;
     }
     
-    // جلب كل البيانات باستخدام $conn
+    // جلب كل البيانات (يبقى كما هو)
     $response['data']['inventory'] = fetchAll($conn, "SELECT * FROM inventory WHERE user_id = ? AND is_deleted = 0 ORDER BY name ASC", [$user_id], "i");
     $response['data']['sales'] = fetchAll($conn, "SELECT * FROM sales WHERE user_id = ? AND is_deleted = 0 ORDER BY created_at DESC", [$user_id], "i");
     $response['data']['expenses'] = fetchAll($conn, "SELECT * FROM expenses WHERE user_id = ? AND is_deleted = 0 ORDER BY created_at DESC", [$user_id], "i");
@@ -61,11 +68,9 @@ try {
     $response['data']['suppliers'] = fetchAll($conn, "SELECT * FROM suppliers WHERE user_id = ? ORDER BY name ASC", [$user_id], "i");
     $response['data']['doctors'] = fetchAll($conn, "SELECT * FROM doctors WHERE user_id = ? ORDER BY name ASC", [$user_id], "i");
     $response['data']['services'] = fetchAll($conn, "SELECT * FROM clinic_services WHERE user_id = ? ORDER BY service_name ASC", [$user_id], "i");
-
-    // ==========  الإضافة الجديدة هنا (جلب العروض) ==========
     $response['data']['promotions'] = fetchAll($conn, "SELECT * FROM clinic_promotions WHERE user_id = ? ORDER BY created_at DESC", [$user_id], "i");
-    // ======================================================
- $sql_reminders = "
+    
+    $sql_reminders = "
         SELECT 
             c.owner_name, 
             c.animal_name, 
@@ -82,7 +87,7 @@ try {
     ";
     $response['data']['vaccination_reminders'] = fetchAll($conn, $sql_reminders, [$user_id], "i");
     
-    // الحالات (كما هي، صحيحة)
+    // الحالات (تبقى كما هي)
     $cases = fetchAll($conn, "SELECT * FROM cases WHERE user_id = ? ORDER BY created_at DESC", [$user_id], "i");
     $vaccinations = fetchAll($conn, "SELECT * FROM case_vaccinations WHERE user_id = ?", [$user_id], "i");
     $treatments = fetchAll($conn, "SELECT * FROM case_treatments WHERE user_id = ?", [$user_id], "i");
@@ -105,7 +110,7 @@ try {
     }
     $response['data']['cases'] = array_values($cases_by_id);
 
-    // الإعدادات (كما هي، صحيحة)
+    // الإعدادات (تبقى كما هي)
     $settings_raw = fetchAll($conn, "SELECT setting_key, setting_value FROM user_settings WHERE user_id = ?", [$user_id], "i");
     $settings_formatted = [];
     foreach ($settings_raw as $setting) {
