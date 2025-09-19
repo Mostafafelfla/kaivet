@@ -1,4 +1,10 @@
 <?php
+// ===== الإضافة الأساسية: يجب بدء الجلسة في بداية الملف =====
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// =======================================================
+
 require '../db_connect.php'; // يوفر المتغير $conn
 header('Content-Type: application/json; charset=utf-8');
 
