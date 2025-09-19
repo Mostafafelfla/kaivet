@@ -379,12 +379,7 @@ bindDoctorsEvents() {
                 formData.append('profile_pic_cropped', croppedImageData);
             }
             
-            const result = await app.api('doctors', 'POST', formData);
-            if (result.success) {
-                await app.loadAllData();
-                resetForm();
-            }
-        });
+            const result = await app.api('expenses', 'POST', data); 
         form.dataset.listenerAttached = 'true';
     }
     
