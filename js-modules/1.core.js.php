@@ -420,8 +420,6 @@ bindDoctorsEvents() {
                         await app.loadAllData();
                     }
                 });
-            }
-        });
         doctorsList.dataset.listenerAttached = 'true';
     }
 },
