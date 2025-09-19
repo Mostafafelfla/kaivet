@@ -96,7 +96,7 @@ try {
 
             $sale_date = (new DateTime())->format('Y-m-d');
             $stmt_sale = $conn->prepare("INSERT INTO sales (user_id, inventory_id, item_name, category, quantity, price_at_sale, purchase_price_at_sale, total_price, discount, discount_amount, final_price, profit, sale_date, sale_type, unit_name_at_sale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt_sale->bind_param("iisdsddddddddss", $user_id, $inventory_id, $item['name'], $item['type'], $quantity, $sale_price_per_unit, $purchase_price_per_unit, $total_price, $discount_percentage, $discount_amount, $final_price, $final_profit, $sale_date, $sale_type, $item['unit_name']);
+            $stmt_sale->bind_param("iissddddddddsss", $user_id, $inventory_id, $item['name'], $item['type'], $quantity, $sale_price_per_unit, $purchase_price_per_unit, $total_price, $discount_percentage, $discount_amount, $final_price, $final_profit, $sale_date, $sale_type, $item['unit_name']);
             $stmt_sale->execute();
             $stmt_sale->close();
             echo json_encode(['success' => true, 'message' => 'تم تسجيل البيع بنجاح.']);
