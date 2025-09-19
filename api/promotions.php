@@ -1,4 +1,10 @@
 <?php
+// ===== الإضافة الأساسية: يجب بدء الجلسة في بداية الملف =====
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// =======================================================
+
 // api/promotions.php (الإصدار 5.0: يدعم تاريخ البدء ويجلب كود الدولة)
 require '../db_connect.php'; // يوفر $conn
 header('Content-Type: application/json; charset=utf-8');
