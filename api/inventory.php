@@ -1,4 +1,10 @@
 <?php
+// ===== الإضافة الأساسية: يجب بدء الجلسة في بداية الملف =====
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// =======================================================
+
 // api/inventory.php
 require '../db_connect.php'; // يوفر $conn ويبدأ الجلسة
 header('Content-Type: application/json; charset=utf-8');
