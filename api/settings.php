@@ -1,4 +1,10 @@
 <?php
+// ===== الإضافة الأساسية: يجب بدء الجلسة في بداية الملف =====
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// =======================================================
+
 // api/settings.php (محدث لدعم الإحداثيات وأرقام الهواتف الجديدة)
 require '../db_connect.php'; 
 header('Content-Type: application/json; charset=utf-8');
