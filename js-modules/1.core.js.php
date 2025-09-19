@@ -6,8 +6,8 @@ state: {
     inventory: [], sales: [], expenses: [], todos: [], cases: [], settings: {}, doctors: [], 
     suppliers: [], 
     services: [],
-    vaccinationReminders: [],    // <-- يتضمن موديول الخدمات
-    promotions: [],  // <-- يتضمن موديول العروض
+    vaccinationReminders: [],
+    promotions: [],
     chat: {
         sessions: [],
         activeSessionId: null,
@@ -87,8 +87,8 @@ bindEvents() {
         });
     });
     
-    // (شامل كل الإضافات الجديدة)
-    this.bindChatEvents();
+    // FIX: تم تعطيل دالة الشات مؤقتاً لأنها غير موجودة في الملف
+    // this.bindChatEvents(); 
     this.bindInventoryEvents(); 
     this.bindSalesEvents(); 
     this.bindServicesEvents();       
@@ -99,8 +99,8 @@ bindEvents() {
     this.bindReportsEvents();
     this.bindSuppliersEvents();
     this.bindDoctorsEvents(); 
-    this.bindClinicServicesEvents(); // <-- إضافة "إدارة الخدمات"
-    this.bindPromotionsEvents();     // <-- إضافة "إدارة العروض" (هذه هي التي تشغل الزر)
+    this.bindClinicServicesEvents();
+    this.bindPromotionsEvents();
 
     if (this.elements.hamburgerBtn) {
         this.elements.hamburgerBtn.addEventListener('click', () => this.toggleSidebar());
@@ -148,7 +148,7 @@ async api(endpoint, method = 'GET', body = null, showGlobalLoader = true) {
     try {
         const response = await fetch(url, options);
         if (response.status === 401) { 
-             throw new Error('User not authenticated.');
+            throw new Error('User not authenticated.');
         }
         const resultText = await response.text();
          try {
@@ -157,8 +157,8 @@ async api(endpoint, method = 'GET', body = null, showGlobalLoader = true) {
             if (result.message && method !== 'GET' && endpoint !== 'chat') this.utils.showMessageBox(result.message, 'success');
             return result;
          } catch (jsonError) {
-            console.error("JSON Parsing Error:", jsonError, "Response Text:", resultText);
-            throw new Error("استجابة غير صالحة من الخادم. قد يكون هناك خطأ في PHP.");
+             console.error("JSON Parsing Error:", jsonError, "Response Text:", resultText);
+             throw new Error("استجابة غير صالحة من الخادم. قد يكون هناك خطأ في PHP.");
          }
     } catch (error) {
         if (error.name === 'AbortError') {
@@ -189,9 +189,10 @@ async loadAllData() {
         this.state.settings = result.data.settings || {};
         this.state.doctors = result.data.doctors || []; 
         this.state.suppliers = result.data.suppliers || [];
-        this.state.services = result.data.services || [];     // <-- محدث
-        this.state.promotions = result.data.promotions || []; // <-- محدث
-        await this.loadChatSessions();
+        this.state.services = result.data.services || [];     
+        this.state.promotions = result.data.promotions || []; 
+        // FIX: تم تعطيل دالة الشات مؤقتاً لأنها غير موجودة في الملف
+        // await this.loadChatSessions(); 
         this.renderAll();
     } 
 },
@@ -230,10 +231,12 @@ renderAll() {
     this.render.casesList();
     this.render.doctorsList(); 
     this.render.suppliersList();
-    this.render.clinicServicesList(); // <-- محدث
-    this.render.promotionsList();     // <-- محدث
+    this.render.clinicServicesList();
+    this.render.promotionsList();
     this.render.dashboardSummary();
-    if(this.elements.chatHistoryList) this.render.chatSessionsList();
+
+    // FIX: تم تعطيل دالة الشات مؤقتاً
+    // if(this.elements.chatHistoryList) this.render.chatSessionsList();
 
     if (document.getElementById('reports-view').classList.contains('hidden') === false) {
        this.loadReportsData();
@@ -266,13 +269,11 @@ switchView(viewId, isInitialLoad = false) {
     if (viewId === 'settings-profile' && !this.state.ui.mapInitialized) if (typeof google !== 'undefined' && google.maps) this.initMap();
 },
 
-// js-modules/2.events.js.php
-
+// --- ⭐⭐⭐ Doctor Events (تم إصلاحه وتطبيق التحديث الفوري) ⭐⭐⭐ ---
 bindDoctorsEvents() {
     const form = document.getElementById('add-doctor-form');
     if (!form) return;
 
-    // --- تعريف العناصر ---
     const formBtnText = document.getElementById('doctor-form-btn-text');
     const cancelBtn = document.getElementById('cancel-doctor-edit-btn');
     const doctorIdField = document.getElementById('doctor-id');
@@ -287,7 +288,6 @@ bindDoctorsEvents() {
     let cropperInstance = null;
     let croppedImageData = null;
 
-    // --- دوال مساعدة ---
     const resetForm = () => {
         form.reset();
         doctorIdField.value = '';
@@ -308,9 +308,6 @@ bindDoctorsEvents() {
         cropModal.classList.remove('flex');
     };
 
-    // --- ربط الأحداث ---
-    
-    // عند اختيار ملف
     if (!fileInput.dataset.listenerAttached) {
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -336,7 +333,6 @@ bindDoctorsEvents() {
         fileInput.dataset.listenerAttached = 'true';
     }
 
-    // عند حفظ القص
     if (!saveCropBtn.dataset.listenerAttached) {
         saveCropBtn.addEventListener('click', () => {
             if (!cropperInstance) return;
@@ -354,7 +350,6 @@ bindDoctorsEvents() {
         saveCropBtn.dataset.listenerAttached = 'true';
     }
 
-    // عند إلغاء القص
     if (!cancelCropBtn.dataset.listenerAttached) {
         cancelCropBtn.addEventListener('click', () => {
             fileInput.value = '';
@@ -363,23 +358,59 @@ bindDoctorsEvents() {
         cancelCropBtn.dataset.listenerAttached = 'true';
     }
     
-    // عند إرسال الفورم الرئيسي
+    // FIX: تم إصلاح منطق الحفظ بالكامل وتطبيق التحديث الفوري
     if (!form.dataset.listenerAttached) {
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
+            const doctorId = doctorIdField.value;
+
+            // نستخدم FormData لإرسال الصورة والبيانات النصية
             const formData = new FormData();
             formData.append('doctor_id', doctorIdField.value);
             formData.append('name', document.getElementById('doctor-name').value);
             formData.append('specialty', document.getElementById('doctor-specialty').value);
             formData.append('phone', document.getElementById('doctor-phone').value);
             formData.append('address', document.getElementById('doctor-address').value);
-            
-            // إضافة الصورة المقصوصة (Base64) إلى الفورم
+
             if (croppedImageData) {
                 formData.append('profile_pic_cropped', croppedImageData);
             }
+
+            // استخراج البيانات لتحديث الواجهة فورًا
+            const doctorData = {
+                id: doctorId || `temp_${Date.now()}`,
+                name: formData.get('name'),
+                specialty: formData.get('specialty'),
+                phone: formData.get('phone'),
+                address: formData.get('address'),
+                profile_pic: 'uploads/default.png' // صورة مؤقتة
+            };
             
-            const result = await app.api('expenses', 'POST', data); 
+            // إرسال الطلب للسيرفر في الخلفية
+            app.api('doctors', 'POST', formData, false).then(result => {
+                if (result.success) {
+                    // بعد نجاح الحفظ، نعيد تحميل البيانات للحصول على ID وصورة صحيحة
+                    app.loadAllData(); 
+                } else {
+                    app.utils.showMessageBox("فشل حفظ بيانات الطبيب.", "error");
+                    app.loadAllData(); // نعيد المزامنة في حالة الفشل
+                }
+            });
+
+            // تحديث الواجهة فورًا
+            if (doctorId) { // حالة التعديل
+                const index = app.state.doctors.findIndex(d => d.id == doctorId);
+                if (index !== -1) {
+                    app.state.doctors[index] = { ...app.state.doctors[index], ...doctorData };
+                }
+            } else { // حالة الإضافة
+                app.state.doctors.unshift(doctorData);
+            }
+
+            app.render.doctorsList();
+            app.render.dashboardSummary();
+            resetForm();
+        });
         form.dataset.listenerAttached = 'true';
     }
     
@@ -420,34 +451,27 @@ bindDoctorsEvents() {
                         await app.loadAllData();
                     }
                 });
+            }
+        });
         doctorsList.dataset.listenerAttached = 'true';
     }
 },
-// (داخل ملف js-modules/1.core.js.php)
 
-// --- ⭐⭐⭐ دالة سجل الحالات (مكتملة ومحدثة) ⭐⭐⭐ ---
+// --- ⭐⭐⭐ Case Events (يبقى كما هو) ⭐⭐⭐ ---
 bindCasesEvents() {
-    // الأزرار الرئيسية لفتح وإغلاق النافذة
     document.getElementById('add-case-btn').addEventListener('click', () => app.modals.showCase());
     document.getElementById('case-modal-cancel-btn').addEventListener('click', () => document.getElementById('case-modal').classList.add('hidden'));
     document.getElementById('case-modal-cancel-btn-header').addEventListener('click', () => document.getElementById('case-modal').classList.add('hidden'));
     
-    // ==========  هذا هو الكود الذي كان مفقوداً  ==========
-    // ربط زر "إضافة تطعيم"
     document.getElementById('add-vaccination-btn').addEventListener('click', () => app.modals.addDynamicInput('vaccinations-container', 'اسم التطعيم/الدواء'));
-    
-    // ربط زر "إضافة علاج"
     document.getElementById('add-treatment-btn').addEventListener('click', () => app.modals.addDynamicInput('treatments-container', 'وصف العلاج/الزيارة'));
-    // ===================================================
 
-    // ربط زر حذف الحقول الديناميكية (التطعيمات والعلاجات)
     document.getElementById('case-modal').addEventListener('click', e => { 
         if (e.target.classList.contains('remove-dynamic-input-btn')) {
             e.target.closest('.dynamic-input-group').remove();
         }
     });
 
-    // عند إرسال الفورم (حفظ الحالة)
     document.getElementById('case-form').addEventListener('submit', async e => {
         e.preventDefault();
         const getDynamicData = cId => Array.from(document.getElementById(cId).children).map(d => ({ name: d.querySelector('input[type="text"]').value, date: d.querySelector('input[title="تاريخ الجرعة الحالية"]').value, next_due_date: d.querySelector('input[title="تاريخ الجرعة التالية"]').value }));
@@ -470,7 +494,6 @@ bindCasesEvents() {
         }
     });
 
-    // ربط أزرار التعديل والحذف في قائمة الحالات الرئيسية
     document.getElementById('cases-list').addEventListener('click', e => {
         const editBtn = e.target.closest('.edit-case-btn');
         if (editBtn) {
@@ -510,13 +533,10 @@ bindCasesEvents() {
         }
     });
 
-    // ربط البحث في سجل الحالات
     document.getElementById('case-search-input').addEventListener('input', () => app.render.casesList());
 },
 
-// --- ⭐⭐⭐ دالة إدارة الخدمات (محدثة بإضافة سطر طباعة للتشخيص) ⭐⭐⭐ ---
-// --- ⭐⭐⭐ دالة إدارة الخدمات المعروضة (إصلاح خطأ ملء حقل التعديل) ⭐⭐⭐ ---
-// --- ⭐⭐⭐ دالة إدارة الخدمات (الإصدار المبسط: نص فقط) ⭐⭐⭐ ---
+// --- ⭐⭐⭐ Clinic Services Events (يبقى كما هو) ⭐⭐⭐ ---
 bindClinicServicesEvents() {
     const form = document.getElementById('add-service-admin-form');
     if (!form) return; 
@@ -536,7 +556,6 @@ bindClinicServicesEvents() {
         e.preventDefault();
         const service_id = serviceIdField.value;
         
-        // جلب البيانات (تم حذف حقل السعر الرقمي)
         const data = {
             service_name: document.getElementById('service-name').value,
             price_note: document.getElementById('service-price-note').value,
@@ -569,7 +588,6 @@ bindClinicServicesEvents() {
             if (service) {
                 serviceIdField.value = service.id;
                 document.getElementById('service-name').value = service.service_name;
-                // (تم حذف حقل السعر الرقمي)
                 document.getElementById('service-price-note').value = service.price_note;
                 document.getElementById('service-desc').value = service.description;
                 
@@ -580,7 +598,6 @@ bindClinicServicesEvents() {
         }
 
         if (deleteBtn) {
-            // (الحذف يبقى كما هو)
             const serviceId = deleteBtn.dataset.id;
             app.modals.showConfirm('تأكيد الحذف', 'هل أنت متأكد من حذف هذه الخدمة؟', async () => {
                 const result = await app.api('clinic_services', 'DELETE', { id: parseInt(serviceId) });
@@ -592,22 +609,15 @@ bindClinicServicesEvents() {
     });
 },
 
-// --- ⭐⭐⭐ دالة إدارة العروض (هذه هي الدالة المطلوبة) ⭐⭐⭐ ---
-// (داخل ملف js-modules/1.core.js.php)
 
-// --- ⭐⭐⭐ دالة إدارة العروض (محدثة: تخفي التفاصيل الفارغة) ⭐⭐⭐ ---
-// (داخل ملف js-modules/1.core.js.php)
-
+// --- ⭐⭐⭐ Promotions Events (تم إصلاح خطأ الواتساب) ⭐⭐⭐ ---
 bindPromotionsEvents() {
     const form = document.getElementById('add-promotion-form');
     if (!form) return; 
 
-    // --- عناصر الفورم ---
     const formBtnText = document.getElementById('promo-form-btn-text');
     const cancelBtn = document.getElementById('cancel-promo-edit-btn');
     const promoIdField = document.getElementById('promo-id');
-
-    // --- عناصر النافذة المنبثقة ---
     const promoListContainer = document.getElementById('promotions-list-container');
     const waModal = document.getElementById('whatsapp-blast-modal');
     const closeWaModalBtn = document.getElementById('close-wa-modal');
@@ -620,11 +630,9 @@ bindPromotionsEvents() {
     const logBatchBtn = document.getElementById('wa-log-batch-btn');
     const backBtn = document.getElementById('wa-back-btn');
     
-    // --- متغيرات الحالة ---
     let currentPromo = null; 
     let clientsToSend = []; 
 
-    // --- دوال مساعدة ---
     const resetForm = () => {
         form.reset(); 
         promoIdField.value = '';
@@ -641,7 +649,6 @@ bindPromotionsEvents() {
         }
     };
     
-    // --- ربط أحداث الفورم الأساسي (مع تاريخ البدء) ---
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const promo_id = promoIdField.value;
@@ -666,7 +673,6 @@ bindPromotionsEvents() {
 
     cancelBtn.addEventListener('click', resetForm);
 
-    // --- ربط أحداث القائمة الرئيسية (لفتح النافذة) ---
     if (promoListContainer) {
         promoListContainer.addEventListener('click', async (e) => {
             const editBtn = e.target.closest('.edit-promo-btn');
@@ -732,7 +738,6 @@ bindPromotionsEvents() {
         });
     }
     
-    // --- ربط أحداث أزرار النافذة المنبثقة (Modal) ---
     if (waModal) {
         closeWaModalBtn.addEventListener('click', () => { waModal.classList.add('hidden'); waModal.classList.remove('flex'); });
         backBtn.addEventListener('click', () => { step1.classList.remove('hidden'); step2.classList.add('hidden'); });
@@ -751,21 +756,21 @@ bindPromotionsEvents() {
             let linksHtml = '';
             let batchToLog = []; 
             const clinicWhatsapp = app.state.settings.clinic_whatsapp || '';
-            const clinicCountryCode = app.state.settings.clinic_country_code || '20';
             
             let messageText = `عرض خاص من (${app.state.settings.clinic_name || 'العيادة'})\n\nالعرض: ${currentPromo.title}\n\n`;
             if(currentPromo.description && currentPromo.description.trim() !== '') { messageText += `التفاصيل: ${currentPromo.description}\n\n`; }
             if(currentPromo.start_date) { messageText += `يبدأ العرض من: ${new Date(currentPromo.start_date).toLocaleDateString('ar-EG')}\n`; }
             messageText += `يسري العرض حتى: ${new Date(currentPromo.expiry_date).toLocaleDateString('ar-EG')}\n`;
-             messageText += `للحجز أو الاستفسار: ${clinicWhatsapp}`;
+            messageText += `للحجز أو الاستفسار: ${clinicWhatsapp}`;
             const encodedMessage = encodeURIComponent(messageText);
 
             selectedCheckboxes.forEach(cb => {
                 const phone = cb.dataset.phone;
                 const name = cb.dataset.name;
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const waLink = `whatsapp://send?phone=${phone}&text=${encodedMessage}`;
-window.location.href = waLink;
+                
+                // FIX: REMOVED the line that was causing the page to redirect
+                // window.location.href = waLink; 
                 
                 linksHtml += `<a href="${waLink}" target="_blank" class="wa-link-item block w-full p-3 bg-white border border-slate-300 rounded-lg text-emerald-700 font-semibold text-center hover:bg-emerald-50"><i class="fab fa-whatsapp ml-2"></i> أرسل إلى: ${name || phone}</a>`;
                 batchToLog.push({ phone: phone, name: name }); 
@@ -807,4 +812,3 @@ window.location.href = waLink;
         });
     }
 },
-// ------------------------------------------
