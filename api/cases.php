@@ -1,4 +1,10 @@
 <?php
+// ===== الإضافة الأساسية: يجب بدء الجلسة في بداية الملف =====
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// =======================================================
+
 // api/cases.php (محدث لدعم كود الدولة)
 require '../db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
