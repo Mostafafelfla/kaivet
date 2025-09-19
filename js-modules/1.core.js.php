@@ -440,15 +440,16 @@ bindDoctorsEvents() {
             }
 
             const deleteBtn = e.target.closest('.delete-doctor-btn');
-            if (deleteBtn) {
-                const doctorId = deleteBtn.dataset.id;
-                app.modals.showConfirm('تأكيد الحذف', 'هل أنت متأكد من حذف هذا الطبيب؟', async () => {
-                    const formData = new FormData();
-                    formData.append('_method', 'DELETE');
-                    formData.append('id', doctorId);
-                    const result = await app.api('doctors', 'POST', formData);
-                    if (result.success) {
-                        await app.loadAllData();
+if (deleteBtn) {
+    const doctorId = deleteBtn.dataset.id;
+    app.modals.showConfirm('تأكيد الحذف', 'هل أنت متأكد من حذف هذا الطبيب؟', async () => {
+        // The fix is to send a simple object, not FormData
+        const result = await app.api('doctors', 'DELETE', { id: parseInt(doctorId) });
+        if (result.success) {
+            // Optimistic update for instant deletion
+            app.state.doctors = app.state.doctors.filter(d => d.id != doctorId);
+            app.render.doctorsList();
+            app.render.dashboardSummary();
                     }
                 });
             }
